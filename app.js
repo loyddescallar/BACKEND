@@ -1,22 +1,22 @@
 import express from "express";
+import "dotenv/config.js";
+import bookRoutes from "./routers/BookRoutes.js";
+import studentRoutes from "./routers/StudentRoutes.js";
 
-// initialize app
+
 const app = express();
+const port = process.env.PORT || 3000;
 
-const port = 3000;
-
-// middleware
 app.use(express.json());
 
-try{
-    app.listen(port, () =>{
-    console.log('listening to port 3000...');
-});
+app.use("/book", bookRoutes);
+app.use("/tbl_student", studentRoutes);
 
-}catch(e){
-    console.log(e);
+
+try {
+  app.listen(port, () => {
+    console.log(`✅ Server running on port ${port}...`);
+  });
+} catch (e) {
+  console.error("❌ Error starting server:", e);
 }
-
-app.get('/loyd',async (request, response) =>{
-    response.status(200).json({message: "Hello I am Loyd Descallar"});
-});
