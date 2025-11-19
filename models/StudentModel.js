@@ -1,6 +1,7 @@
-import pool from './db.js';
+import pool from "../config/db.js";
 
-export const getBooks = async () =>{
+
+export const getStudents = async () =>{
     const [rows] = await pool.query("SELECT * FROM tbl_student")
     return rows;
 }

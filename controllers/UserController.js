@@ -1,70 +1,66 @@
-// controllers/UserController.js
-import UserModel from "../models/UserModel.js";
+import * as UserModel from "../models/UserModel.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export const createUser = async (req, res) => {
-  const { email, password } = req.body;
+    try {
+        const { email, password } = req.body;
 
-  try {
-    const user = await UserModel.createUser(email, password);
-    res.status(201).json({ success: true, message: user });
-  } catch (error) {
-    console.error(error);
-    res.status(400).json({ success: false, message: error.message });
-  }
+        if (!email || !password) {
+            return res.status(400).json({ message: "Email and password are required" });
+        }
+
+        const existing = await UserModel.findByEmail(email);
+
+        if (existing.length > 0) {
+            return res.status(400).json({ message: "Email already exists" });
+        }
+
+        const userId = await UserModel.createUser(email, password);
+
+        return res.status(201).json({
+            success: true,
+            message: "User created successfully",
+            userId: userId,
+        });
+
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
 };
 
+export const login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
 
+        if (!email || !password) {
+            return res.status(400).json({ message: "Email and password required" });
+        }
 
-// // controllers/UserController.js
-// import UserModel from "../models/UserModel.js";
+        const user = await UserModel.findByEmail(email);
 
-// // ✅ CREATE USER
-// export const createUser = async (req, res) => {
-//   const { email, password } = req.body;
+        if (user.length === 0) {
+            return res.status(400).json({ message: "Invalid email" });
+        }
 
-//   try {
-//     const user = await UserModel.createUser(email, password);
-//     res.status(201).json({ success: true, message: user });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(400).json({ success: false, message: error.message });
-//   }
-// };
+        const validPassword = bcrypt.compareSync(password, user[0].password);
 
-// // ✅ READ USERS
-// export const fetchUser = async (req, res) => {
-//   try {
-//     const users = await UserModel.getAllUsers();
-//     res.status(200).json({ success: true, users });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// };
+        if (!validPassword) {
+            return res.status(400).json({ message: "Invalid password" });
+        }
 
-// // ✅ UPDATE USER
-// export const editUser = async (req, res) => {
-//   const { UserId } = req.params;
-//   const { email, password } = req.body;
+        const token = jwt.sign(
+            { id: user[0].id },
+            process.env.SECRET,
+            { expiresIn: "1d" }
+        );
 
-//   try {
-//     const updated = await UserModel.updateUser(UserId, { email, password });
-//     res.status(200).json({ success: true, message: updated });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(400).json({ success: false, message: error.message });
-//   }
-// };
+        return res.status(200).json({
+            success: true,
+            token: token
+        });
 
-// // ✅ DELETE USER
-// export const deleteUser = async (req, res) => {
-//   const { UserId } = req.params;
-
-//   try {
-//     const deleted = await UserModel.deleteUser(UserId);
-//     res.status(200).json({ success: true, message: deleted });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(400).json({ success: false, message: error.message });
-//   }
-// };
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+};
